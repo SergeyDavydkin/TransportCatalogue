@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cmath>
-
+//структура коордианат: широта, долгта
 struct Coordinates {
     double lat;
     double lng;
@@ -13,6 +13,7 @@ struct Coordinates {
     }
 };
 
+//расчет расстояния с учетом радиуса Земли
 inline double ComputeDistance(Coordinates from, Coordinates to) {
     using namespace std;
     if (from == to) {
