@@ -4,12 +4,14 @@ using namespace std::literals;
 
 namespace transport_catalogue::input {
 
+    // считываем строку запроса
     std::string ReadLine() {
         std::string s;
         std::getline(std::cin, s);
         return s;
     }
 
+    // считываем первое число
     int ReadLineWithNumber() {
         int result;
         std::cin >> result;
@@ -17,6 +19,7 @@ namespace transport_catalogue::input {
         return result;
     }
 
+    // // разбиваю строку на слова
     std::vector<std::string_view> SplitIntoWords(std::string_view text, std::string_view separator) {
         std::string_view str = text;
         std::vector<std::string_view> words;
@@ -33,6 +36,7 @@ namespace transport_catalogue::input {
         return words;
     }
 
+    //формируем коордианаты, имя остановки и расстояние
     std::tuple < std::string_view,
         transport_catalogue::Coordinates,
         std::vector<std::pair<std::string, size_t>> > ProcessStopRequest(std::string_view stop) {
@@ -51,6 +55,7 @@ namespace transport_catalogue::input {
         return make_tuple(name, coordinates, stops_distance);
     }
 
+    // формируем маршруты
     std::tuple<std::string_view, std::vector<std::string_view>, bool> ProcessRouteRequest(std::string_view route) {
         size_t shift = route.find(':');
         std::string_view name = route.substr(0, shift);
@@ -68,6 +73,7 @@ namespace transport_catalogue::input {
     }
 
 
+    //разбиваем строку на пару: остановка - расстояние
     std::pair<std::string, size_t> ParseDistanceBetweenStops(std::string_view stops_distance) {
         size_t shift = stops_distance.find('m');
         size_t distance = std::stoul(std::string(stops_distance.substr(0, shift)));
@@ -76,6 +82,7 @@ namespace transport_catalogue::input {
         return { stop_name, distance };
     }
 
+    // формирует буфер запросов
     std::vector<std::string> FillInputBuffer(std::istream&) {
         int request_count = ReadLineWithNumber();
         std::vector<std::string> requests;
@@ -86,6 +93,7 @@ namespace transport_catalogue::input {
         return requests;
     }
 
+    // выполняем запросы из буфера
     void ProcessRequest(std::vector<std::string>& buffer, TransportCatalogue& catalogue) {       
         for (std::string_view str : buffer) {
             size_t shift = str.find(' ');
