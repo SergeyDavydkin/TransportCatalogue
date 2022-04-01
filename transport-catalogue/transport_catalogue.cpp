@@ -2,6 +2,7 @@
 
 namespace transport_catalogue {
 
+   // добавляет маршрут в каталог
     void TransportCatalogue::AddRoute(std::string_view name,
         const std::vector<std::string_view>& stops,
         bool is_circular) {
@@ -18,12 +19,14 @@ namespace transport_catalogue {
         buses_name_.insert({ route.name, &route });
     }
 
+    // добавляет остановку в каталог
     void TransportCatalogue::AddStop(std::string_view name, const Coordinates& coordinates ) {        
         const auto& stop = stops_.emplace_back(std::string(name), coordinates);        
         stops_name_[stop.name] = &stop;
         buses_in_stop_[&stop];
     }
 
+    // возвращает указатель на маршрут по его имени
     const Bus* TransportCatalogue::FindRoute(std::string_view route_name) {
         const auto it = buses_name_.find(route_name);
         if (it == buses_name_.end()) {
@@ -34,6 +37,7 @@ namespace transport_catalogue {
         }
     }
 
+    // возвращает указатель на остановку по её имени    
     const Stop* TransportCatalogue::FindStop(std::string_view stop_name) {
         const auto it = stops_name_.find(stop_name);
         if (it == stops_name_.end()) {
@@ -44,6 +48,7 @@ namespace transport_catalogue {
         }
     }
 
+    // возвращает информацию о маршруе по его имени
     RouteInfo TransportCatalogue::GetRouteInfo(std::string_view route) {
         RouteInfo result;
         const auto* route_ptr = FindRoute(route);
@@ -79,15 +84,18 @@ namespace transport_catalogue {
         return result;
     }
 
+    //возвращает список автобусов, проходящих через остановку
     std::set<std::string> TransportCatalogue::GetStopInfo(std::string_view stop_name) {
         return buses_in_stop_.at(FindStop(stop_name));
     }
 
+    // добавляет в каталог информацию о расстоянии между двумя остановками
     void TransportCatalogue::SetDistanceBetweenStops(const Stop* from, const Stop* to, size_t distance) {
         auto stops_pair = std::make_pair(from, to);
         distance_between_stops_[stops_pair] = distance;
     }
 
+    //возвращает расстояние между остановками 1 и 2 - в прямом, либо если нет - в обратном направлении
     size_t TransportCatalogue::GetDistanceBetweenStops(const Stop* from, const Stop* to) {
         auto stops_pair = std::make_pair(from, to);
         if (distance_between_stops_.find(stops_pair) != distance_between_stops_.end()) {
