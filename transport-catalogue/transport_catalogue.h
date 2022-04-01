@@ -44,7 +44,7 @@ namespace transport_catalogue {
         double curvature;
     };
     
-    //хеш функция вычисляющая расстояние между остановками
+    //хеш функция для пары остановок
     struct DistanceBetweenStopsHasher {
     public:
         size_t operator() (const std::pair<const Stop*, const Stop*> stops_pair) const {
