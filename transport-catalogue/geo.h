@@ -1,26 +1,49 @@
 #pragma once
+#include <string>
+#include <vector>
 
-#include <cmath>
-//структура коордианат: широта, долгта
-struct Coordinates {
-    double lat;
-    double lng;
-    bool operator==(const Coordinates& other) const {
-        return lat == other.lat && lng == other.lng;
-    }
-    bool operator!=(const Coordinates& other) const {
-        return !(*this == other);
-    }
-};
+#include "geo.h"
 
-//расчет расстояния с учетом радиуса Земли
-inline double ComputeDistance(Coordinates from, Coordinates to) {
-    using namespace std;
-    if (from == to) {
-        return 0;
-    }
-    static const double dr = 3.1415926535 / 180.;
-    return acos(sin(from.lat * dr) * sin(to.lat * dr)
-                + cos(from.lat * dr) * cos(to.lat * dr) * cos(abs(from.lng - to.lng) * dr))
-        * 6371000;
-}
+/*
+ * В этом файле вы можете разместить классы/структуры, которые являются частью предметной области (domain)
+ * вашего приложения и не зависят от транспортного справочника. Например Автобусные маршруты и Остановки.
+ *
+ * Их можно было бы разместить и в transport_catalogue.h, однако вынесение их в отдельный
+ * заголовочный файл может оказаться полезным, когда дело дойдёт до визуализации карты маршрутов:
+ * визуализатор карты (map_renderer) можно будет сделать независящим от транспортного справочника.
+ *
+ * Если структура вашего приложения не позволяет так сделать, просто оставьте этот файл пустым.
+ *
+ */
+
+namespace domain {
+
+	struct Stop
+	{		
+		Stop(const std::string& n, const geo::Coordinates& coord);
+			
+		std::string name;
+		geo::Coordinates coordinates;
+	};
+
+	using StopPtr = const Stop*;
+
+	struct Bus
+	{
+		std::string name;
+		std::vector<const Stop*> stops;
+		bool is_circular;
+	};
+
+	using BusPtr = const Bus*;
+
+	struct RouteInfo
+	{
+		std::string_view name;
+		int stops = 0;
+		int unique_stops = 0;
+		double route_length = 0;
+		double curvature = 0.0;
+	};
+
+} // namespace Domain
