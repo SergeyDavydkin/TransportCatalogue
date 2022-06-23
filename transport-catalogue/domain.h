@@ -1,49 +1,25 @@
 #pragma once
-#include <string>
-#include <vector>
 
 #include "geo.h"
-
-/*
- * В этом файле вы можете разместить классы/структуры, которые являются частью предметной области (domain)
- * вашего приложения и не зависят от транспортного справочника. Например Автобусные маршруты и Остановки.
- *
- * Их можно было бы разместить и в transport_catalogue.h, однако вынесение их в отдельный
- * заголовочный файл может оказаться полезным, когда дело дойдёт до визуализации карты маршрутов:
- * визуализатор карты (map_renderer) можно будет сделать независящим от транспортного справочника.
- *
- * Если структура вашего приложения не позволяет так сделать, просто оставьте этот файл пустым.
- *
- */
+#include <string_view>
+#include <vector>
+#include <string>
+#include <set>
 
 namespace domain {
-
-	struct Stop
-	{		
-		Stop(const std::string& n, const geo::Coordinates& coord);
-			
-		std::string name;
-		geo::Coordinates coordinates;
+	struct Stop {
+		std::string_view name = {}; 
+		geo::Coordinates coordinates = { {}, {} };
+		std::set<std::string_view> buses; 
+		bool operator==(const Stop& other) const;
 	};
 
-	using StopPtr = const Stop*;
-
-	struct Bus
-	{
-		std::string name;
-		std::vector<const Stop*> stops;
-		bool is_circular;
-	};
-
-	using BusPtr = const Bus*;
-
-	struct RouteInfo
-	{
-		std::string_view name;
-		int stops = 0;
-		int unique_stops = 0;
-		double route_length = 0;
-		double curvature = 0.0;
-	};
-
-} // namespace Domain
+	struct Bus {
+		std::string_view name;  
+		std::vector<std::string_view> stops; 
+		bool is_round_trip = false;
+		std::string_view end_stop;
+		bool operator==(const Bus& other) const;
+	}; 
+    
+}// namespace domain
