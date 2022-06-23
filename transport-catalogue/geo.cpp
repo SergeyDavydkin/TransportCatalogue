@@ -1,21 +1,22 @@
-#define _USE_MATH_DEFINES
 #include "geo.h"
 
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 namespace geo {
-
-    const double R = 6371000;
-
-double ComputeDistance(Coordinates from, Coordinates to) {
-    using namespace std;
-    if (from == to) {
-        return 0;
+    double ComputeDistance(Coordinates from, Coordinates to)
+    {
+        using namespace std;
+        static const size_t EARTH_RADIUS = 6371000;
+        static const double DEGREE = M_PI / 180.0;
+        return acos(sin(from.lat * DEGREE) * sin(to.lat * DEGREE)
+            + cos(from.lat * DEGREE) * cos(to.lat * DEGREE)
+            * cos(abs(from.lng - to.lng) * DEGREE)) * EARTH_RADIUS;
     }
-    static const double dr = M_PI / 180.;
-    return acos(sin(from.lat * dr) * sin(to.lat * dr)
-                + cos(from.lat * dr) * cos(to.lat * dr) * cos(abs(from.lng - to.lng) * dr))
-        * R;
-}
+
+    inline bool operator==(const Coordinates& lhs, const Coordinates& rhs)
+    {
+        return lhs.lat == rhs.lat && lhs.lng == rhs.lng;
+    }
 
 }  // namespace geo
