@@ -1,108 +1,116 @@
 #pragma once
+
 #include "domain.h"
-#include "svg.h"
 #include "geo.h"
+#include "svg.h"
 
-#include <map>
-#include <set>
-#include <vector>
 #include <algorithm>
+#include <map>
 
-namespace renderer {
+namespace transport_catalogue {
+    using namespace std::literals;
     struct RenderSettings {
+        using Color = std::variant<std::monostate, std::string, svg::Rgb, svg::Rgba>;
+               
         double width = 0.0;
         double height = 0.0;
         double padding = 0.0;
         double line_width = 0.0;
         double stop_radius = 0.0;
         int bus_label_font_size = 0;
-        svg::Point bus_label_offset{ 0, 0 };
+        double bus_label_offset[2] = { 0.0, 0.0 };
         int stop_label_font_size = 0;
-        svg::Point stop_label_offset{ 0, 0 };
-        svg::Color underlayer_color{ svg::NoneColor };
+        double stop_label_offset[2] = { 0.0, 0.0 };
+        Color underlayer_color{ svg::NoneColor };
         double underlayer_width = 0.0;
         std::vector<svg::Color> color_palette;
+        
     };
+} // namespace transport_catalogue
+
+namespace map_renderer {
+    using namespace std::literals;
+    using namespace transport_catalogue;
+    using namespace domain;
 
     inline const double EPSILON = 1e-6;
-
     bool IsZero(double value);
 
     class SphereProjector {
     public:
         template <typename PointInputIt>
-        SphereProjector(PointInputIt points_begin, PointInputIt points_end, double max_width,
-            double max_height, double padding)
-            : padding_(padding) {
-            if (points_begin == points_end) {
-                return;
-            }
-
-            const auto [left_it, right_it]
-                = std::minmax_element(points_begin, points_end, [](auto lhs, auto rhs) {
-                return lhs.lng < rhs.lng;
-                    });
-            min_lon_ = left_it->lng;
-            const double max_lon = right_it->lng;
-
-            const auto [bottom_it, top_it]
-                = std::minmax_element(points_begin, points_end, [](auto lhs, auto rhs) {
-                return lhs.lat < rhs.lat;
-                    });
-            const double min_lat = bottom_it->lat;
-            max_lat_ = top_it->lat;
-
-            std::optional<double> width_zoom;
-            if (!IsZero(max_lon - min_lon_)) {
-                width_zoom = (max_width - 2 * padding) / (max_lon - min_lon_);
-            }
-
-            std::optional<double> height_zoom;
-            if (!IsZero(max_lat_ - min_lat)) {
-                height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat);
-            }
-
-            if (width_zoom && height_zoom) {
-                zoom_coeff_ = std::min(*width_zoom, *height_zoom);
-            }
-            else if (width_zoom) {
-                zoom_coeff_ = *width_zoom;
-            }
-            else if (height_zoom) {
-                zoom_coeff_ = *height_zoom;
-            }
-        }
-
-        svg::Point operator()(geo::Coordinates coords) const;
-
+        SphereProjector(PointInputIt points_begin, PointInputIt points_end, double max_width, double max_height, double padding);
+        svg::Point operator()(geo::Coordinates coordinates) const;
     private:
         double padding_;
         double min_lon_ = 0;
         double max_lat_ = 0;
         double zoom_coeff_ = 0;
-    };
-
+    };     
+    
     class MapRenderer {
     public:
-        void SetRenderSettings(RenderSettings& settings);
-
-        svg::Document GetSVG(const std::map<std::string_view, domain::BusPtr>& routes) const;
-
+        MapRenderer() = default;        
+        void SetRenderSettings(const transport_catalogue::RenderSettings& settings);
+        void SetStops(const std::map<std::string_view, const Stop*> stops);
+        void SetRoutes(const std::map<std::string_view, const Bus*> routes);
+        transport_catalogue::RenderSettings GetRenderSettings() const;
+        void Render(std::ostream& out_stream);
     private:
-        static std::map<std::string_view, domain::StopPtr> GetUniqueStops(const std::map<std::string_view, domain::BusPtr>& r);
-
-        static std::vector<geo::Coordinates> GetCoordinates(const std::map<std::string_view, domain::StopPtr>& un_stops);
-
-        void AddPolylineRoute(svg::Document& result,
-            const std::map<std::string_view, domain::BusPtr>& routes,
-            SphereProjector& projector) const;
-        void AddTextRoute(svg::Document& result,
-            const std::map<std::string_view, domain::BusPtr>& routes,
-            SphereProjector& projector) const;
-        void AddCirceTextStops(svg::Document& result,
-            const std::map<std::string_view, domain::StopPtr>& unique_stops,
-            SphereProjector& projector) const;
-    private:
-        RenderSettings render_settings_;
+        svg::Document doc_;
+        std::map<std::string_view, const Stop*> stops_;
+        std::map<std::string_view, const Bus*> routes_;
+        transport_catalogue::RenderSettings settings_;
+        
+        struct BusSort {
+            bool operator()(const Bus* lhs, const Bus* rhs) const;             
+        };
+        void RenderBusRoutes(SphereProjector& projector, const std::set<const Bus*, BusSort>& routes_to_render);
+        void RenderRoutesNames(const SphereProjector& projector, const std::set<const Bus*, BusSort>& routes_to_render);
+        void RenderStops(const SphereProjector& projector);
+        void RenderStopsNames(const SphereProjector& projector);
     };
-}
+   
+    template <typename PointInputIt>
+    map_renderer::SphereProjector::SphereProjector(PointInputIt points_begin, PointInputIt points_end, double max_width, double max_height, double padding)
+        : padding_(padding)
+    {
+        if (points_begin == points_end) {
+            return;
+        }
+
+        const auto [left_it, right_it]
+            = std::minmax_element(points_begin, points_end, [](auto lhs, auto rhs) {
+            return lhs.lng < rhs.lng;
+                });
+        min_lon_ = left_it->lng;
+        const double max_lon = right_it->lng;
+
+        const auto [bottom_it, top_it]
+            = std::minmax_element(points_begin, points_end, [](auto lhs, auto rhs) {
+            return lhs.lat < rhs.lat;
+                });
+        const double min_lat = bottom_it->lat;
+        max_lat_ = top_it->lat;
+
+        std::optional<double> width_zoom;
+        if (!IsZero(max_lon - min_lon_)) {
+            width_zoom = (max_width - 2 * padding) / (max_lon - min_lon_);
+        }
+
+        std::optional<double> height_zoom;
+        if (!IsZero(max_lat_ - min_lat)) {
+            height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat);
+        }
+
+        if (width_zoom && height_zoom) {
+            zoom_coeff_ = std::min(*width_zoom, *height_zoom);
+        }
+        else if (width_zoom) {
+            zoom_coeff_ = *width_zoom;
+        }
+        else if (height_zoom) {
+            zoom_coeff_ = *height_zoom;
+        }
+    }
+} // namespace map_renderer    
