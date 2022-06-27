@@ -1,19 +1,39 @@
 #pragma once
+
 #include "transport_catalogue.h"
 #include "map_renderer.h"
+#include "transport_router.h"
+#include "serialization.h"
 
-namespace Handler {
+#include <optional>
+#include <iostream>
+
+namespace transport_catalogue {
 
     class RequestHandler {
     public:
-        RequestHandler(const transport_catalogue::TransportCatalogue& db, const renderer::MapRenderer& renderer);
+        explicit RequestHandler(const transport_catalogue::TransportCatalogue& db, map_renderer::MapRenderer& renderer, transport_router::TransportRouter& router, serialization::Serialization& serialization);
+                
+        std::optional<const domain::Bus*> GetBusStat(std::string_view bus_name);
+        
+        const std::set<std::string_view>* GetBusesByStop(const std::string_view& stop_name) const;
 
-        std::optional<transport_catalogue::RouteInfo> GetBusStat(const std::string_view& bus_name) const;
-        const std::unordered_set<domain::BusPtr>* GetBusesByStop(const std::string_view& stop_name) const;
-        svg::Document RenderMap() const;
+        void RenderMap() const;
+        void SetCatalogueDataToRender() const;
+
+        void GenerateRouter() const;
+
+        void SerializeBase() const;
+        void DeserializeBase() const; 
 
     private:
-        const transport_catalogue::TransportCatalogue& db_;
-        const renderer::MapRenderer& renderer_;
+       
+        const TransportCatalogue& db_;
+        map_renderer::MapRenderer& renderer_;
+        transport_router::TransportRouter& router_;
+        serialization::Serialization& serialization_; 
+
+        void SetStopsForRender() const;
+        void SetRoutesForRender() const;
     };
-} //namespace Handler
+} // namespace transport_catalogue
