@@ -63,10 +63,8 @@ namespace svg {
     }
 
     void Object::Render(const RenderContext& context) const {
-        context.RenderIndent();
-        // Делегируем вывод тега своим подклассам
+        context.RenderIndent();       
         RenderObject(context);
-
         context.out << std::endl;
     }
 
@@ -112,6 +110,7 @@ namespace svg {
         RenderAttrs(context.out);
         out << "/>"sv;
     }
+    
     //  ------------- Text ------------------
     Text& Text::SetPosition(Point pos) {
         position_ = pos;
@@ -171,6 +170,7 @@ namespace svg {
             }
         }
     }
+    
     //  ----------------- Document ---------------------
     void Document::AddPtr(std::unique_ptr<Object>&& obj) {
         objects_.emplace_back(std::move(obj));
