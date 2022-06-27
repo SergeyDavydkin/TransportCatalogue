@@ -1,29 +1,66 @@
 #include "request_handler.h"
+#include <map>
 
-/*
- * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
- * хотелось бы помещать ни в transport_catalogue, ни в json reader.
- *
- * Если вы затрудняетесь выбрать, что можно было бы поместить в этот файл,
- * можете оставить его пустым.
- */
+namespace transport_catalogue {
+    
+     RequestHandler::RequestHandler(const transport_catalogue::TransportCatalogue& db, map_renderer::MapRenderer& renderer, transport_router::TransportRouter& router, serialization::Serialization& serialization)
+            :db_(db), renderer_(renderer), router_(router), serialization_(serialization) {
+        }
+    
+    std::optional<const domain::Bus*> RequestHandler::GetBusStat(std::string_view bus_name) {
+        const domain::Bus* bus = db_.SearchRoute(bus_name);
+        if (bus != nullptr) {
+            return bus;
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+    
+    const std::set<std::string_view>* RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
+        const domain::Stop* stop = db_.SearchStop(stop_name);
+        if (!stop->buses.empty()) {
+            return &(stop->buses);
+        }
+        else {
+            return nullptr;
+        }
+    }
+    
+    void RequestHandler::RenderMap() const {
+    }
 
-namespace Handler {
+    void RequestHandler::SetCatalogueDataToRender() const {
+        SetStopsForRender();
+        SetRoutesForRender();
+    }
 
-	RequestHandler::RequestHandler(const transport_catalogue::TransportCatalogue& db, const renderer::MapRenderer& renderer)
-		: db_(db)
-		, renderer_(renderer) {
-	}
+    void RequestHandler::SetStopsForRender() const {
+        std::map<std::string_view, const domain::Stop*> stops;
+        for (const auto& stop : db_.GetStopsForRender()) {
+            stops[stop.first] = &stop.second;
+        }
+        renderer_.SetStops(stops);
+    }
 
-	std::optional<transport_catalogue::RouteInfo> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
-		return db_.GetRouteInfo(bus_name);
-	}
+    void RequestHandler::SetRoutesForRender() const {
+        std::map<std::string_view, const domain::Bus*> routes;
+        for (const auto& route : db_.GetRoutesForRender()) {
+            routes[route.first] = &route.second;
+        }
+        renderer_.SetRoutes(routes);
+    }
+    
+    void RequestHandler::GenerateRouter() const {
+        router_.GenerateRouter();
+    }
+    
+    void RequestHandler::SerializeBase() const { 
+        GenerateRouter();
+        serialization_.Serialize();
+    }
 
-	const std::unordered_set<domain::BusPtr>* RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
-		return db_.GetStopInfo(stop_name);
-	}
-
-	svg::Document RequestHandler::RenderMap() const {
-		return renderer_.GetSVG(db_.GetAllRoutes());
-	}
-} //namespace Handler
+    void RequestHandler::DeserializeBase() const {         
+        serialization_.Deserialize();
+    }
+} // namespace transport_catalogue
